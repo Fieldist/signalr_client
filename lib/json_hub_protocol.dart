@@ -66,7 +66,7 @@ class JsonHubProtocol implements IHubProtocol {
           messageObj = _getCloseMessageFromJson(jsonData);
           break;
         default:
-          // Future protocol changes can add message types, old clients can ignore them
+        // Future protocol changes can add message types, old clients can ignore them
           logger?.info("Unknown message type '$messageType' ignored.");
           continue;
       }
@@ -96,7 +96,7 @@ class JsonHubProtocol implements IHubProtocol {
   static InvocationMessage _getInvocationMessageFromJson(
       Map<String, dynamic> jsonData) {
     final MessageHeaders? headers =
-        createMessageHeadersFromJson(jsonData["headers"]);
+    createMessageHeadersFromJson(jsonData["headers"]);
     final message = InvocationMessage(
         target: jsonData["target"],
         arguments: jsonData["arguments"]?.cast<Object?>().toList(),
@@ -119,7 +119,7 @@ class JsonHubProtocol implements IHubProtocol {
   static StreamItemMessage _getStreamItemMessageFromJson(
       Map<String, dynamic> jsonData) {
     final MessageHeaders? headers =
-        createMessageHeadersFromJson(jsonData["headers"]);
+    createMessageHeadersFromJson(jsonData["headers"]);
     final message = StreamItemMessage(
         item: jsonData["item"],
         headers: headers,
@@ -136,7 +136,7 @@ class JsonHubProtocol implements IHubProtocol {
   static CompletionMessage _getCompletionMessageFromJson(
       Map<String, dynamic> jsonData) {
     final MessageHeaders? headers =
-        createMessageHeadersFromJson(jsonData["headers"]);
+    createMessageHeadersFromJson(jsonData["headers"]);
     final message = CompletionMessage(
         error: jsonData["error"],
         result: jsonData["result"],
@@ -218,13 +218,17 @@ class JsonHubProtocol implements IHubProtocol {
     }
 
     if (message is CompletionMessage) {
-      return {
+      if (message.error != null && message.result != null) {
+        throw ("Completion message must contain either 'error' or 'result'");
+      }
+      var r = {
         "type": messageType,
         "invocationId": message.invocationId,
         "headers": message.headers.asMap,
-        "error": message.error,
-        "result": message.result
       };
+      if (message.error != null) r["error"] = message.error;
+      if (message.result != null) r["result"] = message.result;
+      return r;
     }
 
     if (message is PingMessage) {
