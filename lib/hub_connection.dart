@@ -21,7 +21,7 @@ class _HubConnectionStateMaintainer {
 
   _HubConnectionStateMaintainer(HubConnectionState initialConnectionState) {
     _hubConnectionStateStreamController =
-    StreamController<HubConnectionState>.broadcast();
+        StreamController<HubConnectionState>.broadcast();
     _connectionState = initialConnectionState;
   }
 
@@ -223,7 +223,7 @@ class HubConnection {
 
     try {
       final handshakeRequest =
-      HandshakeRequestMessage(_protocol.name, _protocol.version);
+          HandshakeRequestMessage(_protocol.name, _protocol.version);
 
       _logger?.finer("Sending handshake request.");
 
@@ -340,16 +340,17 @@ class HubConnection {
   /// args: The arguments used to invoke the server method.
   /// Returns a StreamControler object that yields results from the server as they are received.
   ///
-  StreamController<Object?> streamControllable(String methodName, List<Object> args) {
+  StreamController<Object?> streamControllable(
+      String methodName, List<Object> args) {
     final t = _replaceStreamingParams(args);
     final invocationDescriptor =
-    _createStreamInvocation(methodName, args, t.keys.toList());
+        _createStreamInvocation(methodName, args, t.keys.toList());
 
     late Future<void> promiseQueue;
     final StreamController streamController = StreamController<Object?>(
       onCancel: () {
         final cancelInvocation =
-        _createCancelInvocation(invocationDescriptor.invocationId);
+            _createCancelInvocation(invocationDescriptor.invocationId);
         _callbacks.remove(invocationDescriptor.invocationId);
 
         return promiseQueue.then((_) => _sendWithProtocol(cancelInvocation));
@@ -409,8 +410,8 @@ class HubConnection {
   Future<void> send(String methodName, {List<Object>? args}) {
     args = args ?? [];
     final t = _replaceStreamingParams(args);
-    final sendPromise =
-    _sendWithProtocol(_createInvocation(methodName, args, true, t.keys.toList()));
+    final sendPromise = _sendWithProtocol(
+        _createInvocation(methodName, args, true, t.keys.toList()));
 
     _launchStreams(t, sendPromise);
     return sendPromise;
@@ -430,7 +431,7 @@ class HubConnection {
     args = args ?? [];
     final t = _replaceStreamingParams(args);
     final invocationDescriptor =
-    _createInvocation(methodName, args, false, t.keys.toList());
+        _createInvocation(methodName, args, false, t.keys.toList());
 
     final completer = Completer<Object?>();
 
@@ -460,7 +461,7 @@ class HubConnection {
     };
 
     final promiseQueue =
-    _sendWithProtocol(invocationDescriptor).catchError((e) {
+        _sendWithProtocol(invocationDescriptor).catchError((e) {
       if (!completer.isCompleted) completer.completeError(e);
       // invocationId will always have a value for a non-blocking invocation
       _callbacks.remove(invocationDescriptor.invocationId);
@@ -574,7 +575,7 @@ class HubConnection {
           case MessageType.Completion:
             final invocationMsg = message as HubInvocationMessage;
             final void Function(HubMessageBase, Exception?)? callback =
-            _callbacks[invocationMsg.invocationId];
+                _callbacks[invocationMsg.invocationId];
             if (callback != null) {
               if (message.type == MessageType.Completion) {
                 _callbacks.remove(invocationMsg.invocationId);
@@ -583,7 +584,7 @@ class HubConnection {
             }
             break;
           case MessageType.Ping:
-          // Don't care about pings
+            // Don't care about pings
             break;
           case MessageType.Close:
             _logger?.info("Close message received from server.");
@@ -591,7 +592,7 @@ class HubConnection {
 
             final Exception? error = closeMessage.error != null
                 ? GeneralError(
-                "Server returned an error on close: " + closeMessage.error!)
+                    "Server returned an error on close: " + closeMessage.error!)
                 : null;
 
             if (closeMessage.allowReconnect == true) {
@@ -658,17 +659,17 @@ class HubConnection {
     _cleanupPingTimer();
     _pingServerTimer =
         Timer.periodic(Duration(milliseconds: keepAliveIntervalInMilliseconds),
-                (Timer t) async {
-              if (_connectionState == HubConnectionState.Connected) {
-                try {
-                  await _sendMessage(_cachedPingMessage);
-                } catch (e) {
-                  // We don't care about the error. It should be seen elsewhere in the client.
-                  // The connection is probably in a bad or closed state now, cleanup the timer so it stops triggering
-                  _cleanupPingTimer();
-                }
-              }
-            });
+            (Timer t) async {
+      if (_connectionState == HubConnectionState.Connected) {
+        try {
+          await _sendMessage(_cachedPingMessage);
+        } catch (e) {
+          // We don't care about the error. It should be seen elsewhere in the client.
+          // The connection is probably in a bad or closed state now, cleanup the timer so it stops triggering
+          _cleanupPingTimer();
+        }
+      }
+    });
   }
 
   void _resetTimeoutPeriod() {
@@ -769,7 +770,7 @@ class HubConnection {
         : GeneralError("Attempting to reconnect due to a unknown error.");
 
     var nextRetryDelay =
-    _getNextRetryDelay(previousReconnectAttempts++, 0, retryError);
+        _getNextRetryDelay(previousReconnectAttempts++, 0, retryError);
 
     if (nextRetryDelay == null) {
       _logger?.finer(
@@ -913,7 +914,8 @@ class HubConnection {
     }
   }
 
-  _launchStreams(Map<String, Stream<Object>> streams, Future<void>? promiseQueue) {
+  _launchStreams(
+      Map<String, Stream<Object>> streams, Future<void>? promiseQueue) {
     if (streams.length == 0) {
       return;
     }
@@ -926,11 +928,11 @@ class HubConnection {
     // We want to iterate over the keys, since the keys are the stream ids
     streams.forEach((id, stream) {
       stream.listen((item) {
-        promiseQueue = promiseQueue?.then((_) =>
-            _sendWithProtocol(_createStreamItemMessage(id, item)));
-      }, onDone: () {
         promiseQueue = promiseQueue?.then(
-                (_) => _sendWithProtocol(_createCompletionMessage(id)));
+            (_) => _sendWithProtocol(_createStreamItemMessage(id, item)));
+      }, onDone: () {
+        promiseQueue = promiseQueue
+            ?.then((_) => _sendWithProtocol(_createCompletionMessage(id)));
       }, onError: (err) {
         String message;
         if (err is Exception) {
@@ -939,15 +941,15 @@ class HubConnection {
           message = "Unknown error";
         }
 
-        promiseQueue = promiseQueue?.then((_) => _sendWithProtocol(
-            _createCompletionMessage(id, error: message)));
+        promiseQueue = promiseQueue?.then((_) =>
+            _sendWithProtocol(_createCompletionMessage(id, error: message)));
       });
     });
   }
 
-  Map<String, Stream<Object>> _replaceStreamingParams(
-      List<Object> args) {
-    final Map<String, Stream<Object>> streams = new Map<String, Stream<Object>>();
+  Map<String, Stream<Object>> _replaceStreamingParams(List<Object> args) {
+    final Map<String, Stream<Object>> streams =
+        new Map<String, Stream<Object>>();
 
     for (var i = 0; i < args.length; i++) {
       final argument = args[i];
