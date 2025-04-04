@@ -952,8 +952,10 @@ class HubConnection {
     for (var i = 0; i < args.length; i++) {
       final argument = args[i];
       if (argument is Stream) {
+        // For streams in signalR we need the invocation method id to match
+        // the stream id to not miss any data. At this point the invoked method
+        // was not called yet thus the invocation id was not taken yet.
         final streamId = _invocationId!;
-        _invocationId = _invocationId! + 1;
         // Store the stream for later use
         streams[streamId.toString()] = argument as Stream<Object>;
 
